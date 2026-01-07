@@ -35,7 +35,7 @@ export const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
       <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">ClassSync</h1>
+          <h1 className="text-4xl font-bold text-primary mb-2">AC24DIA</h1>
           <p className="text-gray-500 dark:text-gray-400">Class Management System</p>
         </div>
 

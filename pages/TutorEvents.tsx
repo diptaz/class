@@ -125,42 +125,53 @@ export const TutorEvents = () => {
                   </div>
                </div>
 
-               <div className="bg-gray-50 dark:bg-gray-750 p-4 border-t dark:border-gray-700">
+               <div className="bg-gray-50 dark:bg-gray-900 p-4 border-t dark:border-gray-800">
                   <div className="flex justify-between items-center mb-3 text-sm">
-                     <span className="font-medium text-gray-600 dark:text-gray-300">Quota</span>
+                     <span className="font-medium text-gray-600 dark:text-gray-400">Quota</span>
                      <span className={`${isFull ? 'text-red-500' : 'text-green-600'} font-bold`}>
                         {event.participants.length} / {event.maxParticipants}
                      </span>
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4 overflow-hidden">
-                     <div 
-                        className={`h-2 rounded-full transition-all duration-500 ${getCapacityColor(event.participants.length, event.maxParticipants)}`} 
+
+                  <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 mb-4 overflow-hidden">
+                     <div
+                        className={`h-2 rounded-full transition-all duration-500 ${getCapacityColor(
+                        event.participants.length,
+                        event.maxParticipants
+                        )}`}
                         style={{ width: `${(event.participants.length / event.maxParticipants) * 100}%` }}
                      ></div>
                   </div>
 
                   {isJoined ? (
-                     <button 
+                     <button
                         onClick={() => leaveTutorEvent(event.id)}
-                        className="w-full py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:border-red-900 dark:text-red-400 flex items-center justify-center gap-2 transition"
+                        className="w-full py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50
+                                 dark:hover:bg-red-950/30 dark:border-red-900/70 dark:text-red-400
+                                 flex items-center justify-center gap-2 transition"
                      >
                         <LogOut size={18} /> Leave Class
                      </button>
                   ) : (
-                     <button 
+                     <button
                         onClick={() => joinTutorEvent(event.id)}
                         disabled={isFull || !canJoin}
                         className={`w-full py-2 rounded-lg text-white flex items-center justify-center gap-2 transition font-medium
-                           ${isFull 
-                              ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-500' 
-                              : 'bg-primary hover:bg-blue-600 shadow-sm hover:shadow'
-                           }
+                        ${
+                           isFull
+                              ? 'bg-gray-300 dark:bg-gray-800 cursor-not-allowed text-gray-500 dark:text-gray-500'
+                              : 'bg-primary hover:bg-blue-600 dark:hover:bg-blue-700 shadow-sm hover:shadow'
+                        }
                         `}
                      >
-                        {isFull ? 'Class Full' : <><LogIn size={18} /> Join Class</>}
+                        {isFull ? 'Class Full' : (
+                        <>
+                           <LogIn size={18} /> Join Class
+                        </>
+                        )}
                      </button>
                   )}
-               </div>
+                  </div>
             </div>
           );
         })}

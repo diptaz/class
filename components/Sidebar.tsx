@@ -24,7 +24,7 @@ export const Sidebar = () => {
   return (
     <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen fixed left-0 top-0">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-primary tracking-tighter">Class<span className="text-gray-800 dark:text-white">Sync</span></h1>
+        <h1 className="text-2xl font-bold text-primary tracking-tighter">AC<span className="text-gray-800 dark:text-white">24</span>DIA</h1>
         <div className="mt-2 text-xs font-mono text-gray-500 dark:text-gray-500">
           Logged as: <span className="text-secondary font-bold">{currentUser.role}</span>
         </div>
