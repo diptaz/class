@@ -88,6 +88,9 @@ create table if not exists tutor_events (
   "waitingList" jsonb default '[]'
 );
 
+-- MIGRATION: Ensure waitingList exists if table was created previously
+alter table tutor_events add column if not exists "waitingList" jsonb default '[]';
+
 -- 9. ACTIVITY LOGS
 create table if not exists activity_logs (
   "id" text primary key,
