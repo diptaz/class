@@ -14,10 +14,22 @@ import { Profile } from './pages/Profile';
 import { TutorEvents } from './pages/TutorEvents';
 import { Schedule } from './pages/Schedule';
 import { Role } from './types';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Loader2 } from 'lucide-react';
 
 const Layout = () => {
-  const { currentUser, isDarkMode, toggleDarkMode } = useStore();
+  const { currentUser, isLoading, isDarkMode, toggleDarkMode } = useStore();
+
+  // Show loader while checking session/data to prevent flickering or premature redirect
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin text-primary" size={48} />
+          <p className="text-gray-500 dark:text-gray-400 font-medium">Loading ClassSync...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) return <Navigate to="/login" />;
 
@@ -40,8 +52,9 @@ const Layout = () => {
 };
 
 const ProtectedRoute = ({ children, roles }: { children?: React.ReactNode, roles?: Role[] }) => {
-  const { currentUser } = useStore();
+  const { currentUser, isLoading } = useStore();
   
+  if (isLoading) return null; // Let Layout handle loading UI
   if (!currentUser) return <Navigate to="/login" />;
   
   if (roles && !roles.includes(currentUser.role)) {
@@ -56,13 +69,6 @@ const ProtectedRoute = ({ children, roles }: { children?: React.ReactNode, roles
 
   return <>{children}</>;
 };
-
-const SimplePage = ({ title }: { title: string }) => (
-  <div className="p-8">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{title}</h1>
-    <p className="text-gray-500">This feature is implemented in the data structure but the UI is a placeholder for this demo.</p>
-  </div>
-);
 
 const App = () => {
   return (
