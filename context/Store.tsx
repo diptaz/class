@@ -45,6 +45,8 @@ interface StoreContextType {
   joinTutorEvent: (eventId: string) => void;
   leaveTutorEvent: (eventId: string) => void;
   promoteFromWaitingList: (eventId: string, userId: string) => void;
+  assignUserToEvent: (eventId: string, userId: string) => void;
+  kickFromEvent: (eventId: string, userId: string) => void;
 
   updateUserRole: (userId: string, role: Role) => void;
   updateUserStatus: (userId: string, isActive: boolean) => void;
@@ -405,6 +407,43 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     logActivity(`Promoted user ${userId} from waiting list in event ${eventId}`);
   };
 
+  const assignUserToEvent = async (eventId: string, userId: string) => {
+    const event = tutorEvents.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (event.participants.includes(userId)) return;
+
+    const newWaitingList = (event.waitingList || []).filter(id => id !== userId);
+    const newParticipants = [...event.participants, userId];
+
+    setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { 
+        ...ev, 
+        waitingList: newWaitingList,
+        participants: newParticipants
+    } : ev));
+
+    if (isSupabaseConfigured()) {
+       await supabase.from('tutor_events').update({ 
+           waitingList: newWaitingList,
+           participants: newParticipants
+       }).eq('id', eventId);
+    }
+    logActivity(`Assigned user ${userId} to event ${eventId}`);
+  };
+
+  const kickFromEvent = async (eventId: string, userId: string) => {
+    const event = tutorEvents.find(e => e.id === eventId);
+    if (!event) return;
+
+    const newParticipants = event.participants.filter(id => id !== userId);
+    setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, participants: newParticipants } : ev));
+
+    if (isSupabaseConfigured()) {
+        await supabase.from('tutor_events').update({ participants: newParticipants }).eq('id', eventId);
+    }
+    logActivity(`Removed user ${userId} from event ${eventId}`);
+  };
+
   const updateUserRole = async (userId: string, role: Role) => {
     setUsers(users.map(u => u.id === userId ? { ...u, role } : u));
     if (isSupabaseConfigured()) await supabase.from('users').update({ role }).eq('id', userId);
@@ -498,7 +537,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       addSubject, deleteSubject, addScheduleItem, deleteScheduleItem,
       addVideo, deleteVideo,
       addMaterial, deleteMaterial,
-      addTutorEvent, editTutorEvent, deleteTutorEvent, joinTutorEvent, leaveTutorEvent, promoteFromWaitingList,
+      addTutorEvent, editTutorEvent, deleteTutorEvent, joinTutorEvent, leaveTutorEvent, promoteFromWaitingList, assignUserToEvent, kickFromEvent,
       updateUserRole, updateUserStatus, updateUserProfile,
       updateSeat, resetSeats, randomizeSeats
     }}>
