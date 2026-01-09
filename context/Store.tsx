@@ -40,9 +40,11 @@ interface StoreContextType {
   deleteMaterial: (id: string) => void;
 
   addTutorEvent: (event: TutorEvent) => void;
+  editTutorEvent: (id: string, updates: Partial<TutorEvent>) => void;
   deleteTutorEvent: (id: string) => void;
   joinTutorEvent: (eventId: string) => void;
   leaveTutorEvent: (eventId: string) => void;
+  promoteFromWaitingList: (eventId: string, userId: string) => void;
 
   updateUserRole: (userId: string, role: Role) => void;
   updateUserStatus: (userId: string, isActive: boolean) => void;
@@ -306,6 +308,12 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     logActivity(`Added tutor event: ${event.title}`);
   };
 
+  const editTutorEvent = async (id: string, updates: Partial<TutorEvent>) => {
+    setTutorEvents(prev => prev.map(ev => ev.id === id ? { ...ev, ...updates } : ev));
+    if (isSupabaseConfigured()) await supabase.from('tutor_events').update(updates).eq('id', id);
+    logActivity(`Edited tutor event ID: ${id}`);
+  };
+
   const deleteTutorEvent = async (id: string) => {
     setTutorEvents(tutorEvents.filter(e => e.id !== id));
     if (isSupabaseConfigured()) await supabase.from('tutor_events').delete().eq('id', id);
@@ -317,7 +325,13 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     const event = tutorEvents.find(e => e.id === eventId);
     if (!event) return;
     
-    if (event.participants.length < event.maxParticipants && !event.participants.includes(currentUser.id)) {
+    // Check if already in participants or waiting list
+    if (event.participants.includes(currentUser.id) || (event.waitingList && event.waitingList.includes(currentUser.id))) {
+      return;
+    }
+
+    if (event.participants.length < event.maxParticipants) {
+      // Join as participant
       const newParticipants = [...event.participants, currentUser.id];
       setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, participants: newParticipants } : ev));
       
@@ -325,6 +339,16 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         await supabase.from('tutor_events').update({ participants: newParticipants }).eq('id', eventId);
       }
       logActivity(`Joined tutor event ID: ${eventId}`);
+    } else {
+      // Join waiting list
+      const currentWaitingList = event.waitingList || [];
+      const newWaitingList = [...currentWaitingList, currentUser.id];
+      setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, waitingList: newWaitingList } : ev));
+
+      if (isSupabaseConfigured()) {
+        await supabase.from('tutor_events').update({ waitingList: newWaitingList }).eq('id', eventId);
+      }
+      logActivity(`Joined waiting list for event ID: ${eventId}`);
     }
   };
 
@@ -333,13 +357,52 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     const event = tutorEvents.find(e => e.id === eventId);
     if (!event) return;
 
-    const newParticipants = event.participants.filter(id => id !== currentUser.id);
-    setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, participants: newParticipants } : ev));
+    const isParticipant = event.participants.includes(currentUser.id);
+    const isWaitlisted = event.waitingList && event.waitingList.includes(currentUser.id);
+
+    if (isParticipant) {
+        const newParticipants = event.participants.filter(id => id !== currentUser.id);
+        setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, participants: newParticipants } : ev));
+        if (isSupabaseConfigured()) {
+            await supabase.from('tutor_events').update({ participants: newParticipants }).eq('id', eventId);
+        }
+        logActivity(`Left tutor event ID: ${eventId}`);
+    } else if (isWaitlisted) {
+        const newWaitingList = (event.waitingList || []).filter(id => id !== currentUser.id);
+        setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { ...ev, waitingList: newWaitingList } : ev));
+        if (isSupabaseConfigured()) {
+            await supabase.from('tutor_events').update({ waitingList: newWaitingList }).eq('id', eventId);
+        }
+        logActivity(`Left waiting list for event ID: ${eventId}`);
+    }
+  };
+
+  const promoteFromWaitingList = async (eventId: string, userId: string) => {
+    const event = tutorEvents.find(e => e.id === eventId);
+    if (!event) return;
+
+    // Remove from waiting list
+    const newWaitingList = (event.waitingList || []).filter(id => id !== userId);
+    
+    // Add to participants if not already there
+    let newParticipants = event.participants;
+    if (!event.participants.includes(userId)) {
+       newParticipants = [...event.participants, userId];
+    }
+
+    setTutorEvents(prev => prev.map(ev => ev.id === eventId ? { 
+        ...ev, 
+        waitingList: newWaitingList,
+        participants: newParticipants
+    } : ev));
 
     if (isSupabaseConfigured()) {
-      await supabase.from('tutor_events').update({ participants: newParticipants }).eq('id', eventId);
+       await supabase.from('tutor_events').update({ 
+           waitingList: newWaitingList,
+           participants: newParticipants
+       }).eq('id', eventId);
     }
-    logActivity(`Left tutor event ID: ${eventId}`);
+    logActivity(`Promoted user ${userId} from waiting list in event ${eventId}`);
   };
 
   const updateUserRole = async (userId: string, role: Role) => {
@@ -435,7 +498,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       addSubject, deleteSubject, addScheduleItem, deleteScheduleItem,
       addVideo, deleteVideo,
       addMaterial, deleteMaterial,
-      addTutorEvent, deleteTutorEvent, joinTutorEvent, leaveTutorEvent,
+      addTutorEvent, editTutorEvent, deleteTutorEvent, joinTutorEvent, leaveTutorEvent, promoteFromWaitingList,
       updateUserRole, updateUserStatus, updateUserProfile,
       updateSeat, resetSeats, randomizeSeats
     }}>
