@@ -106,6 +106,7 @@ export const initialTutorEvents: TutorEvent[] = [
     tutorId: 'bibilung1',
     tutorName: 'Master Bibilung',
     maxParticipants: 5,
-    participants: ['s1', 's2']
+    participants: ['s1', 's2'],
+    waitingList: []
   }
 ];
