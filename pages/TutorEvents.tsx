@@ -230,52 +230,69 @@ export const TutorEvents = () => {
                       </div>
                   )}
                </div>
-
-               <div className="bg-gray-50 dark:bg-gray-750 p-4 border-t dark:border-gray-700">
-                  <div className="flex justify-between items-center mb-3 text-sm">
-                     <span className="font-medium text-gray-600 dark:text-gray-300">Quota</span>
-                     <span className={`${isFull ? 'text-red-500' : 'text-green-600'} font-bold`}>
-                        {event.participants.length} / {event.maxParticipants}
-                     </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4 overflow-hidden">
-                     <div 
-                        className={`h-2 rounded-full transition-all duration-500 ${getCapacityColor(event.participants.length, event.maxParticipants)}`} 
-                        style={{ width: `${(event.participants.length / event.maxParticipants) * 100}%` }}
-                     ></div>
-                  </div>
-
-                  {isJoined ? (
-                     <button 
-                        onClick={() => leaveTutorEvent(event.id)}
-                        className="w-full py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:border-red-900 dark:text-red-400 flex items-center justify-center gap-2 transition"
-                     >
-                        <LogOut size={18} /> Leave Class
-                     </button>
-                  ) : isWaitlisted ? (
-                    <button 
-                        onClick={() => leaveTutorEvent(event.id)}
-                        className="w-full py-2 rounded-lg border border-yellow-200 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 dark:border-yellow-900 dark:text-yellow-400 flex items-center justify-center gap-2 transition"
-                     >
-                        <LogOut size={18} /> Leave Waitlist
-                     </button>
-                  ) : (
-                     <button 
-                        onClick={() => joinTutorEvent(event.id)}
-                        disabled={!canJoin}
-                        className={`w-full py-2 rounded-lg text-white flex items-center justify-center gap-2 transition font-medium
-                           ${!canJoin 
-                              ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-500' 
-                              : isFull 
-                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                                : 'bg-primary hover:bg-blue-600 shadow-sm hover:shadow'
-                           }
-                        `}
-                     >
-                        {!canJoin ? 'Students Only' : isFull ? 'Join Waitlist' : <><LogIn size={18} /> Join Class</>}
-                     </button>
-                  )}
-               </div>
+               <div className="bg-gray-900 p-4 border-t border-gray-800 rounded-b-xl">
+                <div className="flex justify-between items-center mb-3 text-sm">
+                  <span className="font-medium text-gray-400">Quota</span>
+                  <span className={`${isFull ? 'text-red-400' : 'text-green-400'} font-bold`}>
+                    {event.participants.length} / {event.maxParticipants}
+                  </span>
+                </div>
+              
+                <div className="w-full bg-gray-800 rounded-full h-2 mb-4 overflow-hidden">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-500 
+                      ${getCapacityColor(event.participants.length, event.maxParticipants)}`}
+                    style={{
+                      width: `${(event.participants.length / event.maxParticipants) * 100}%`,
+                    }}
+                  />
+                </div>
+              
+                {isJoined ? (
+                  <button
+                    onClick={() => leaveTutorEvent(event.id)}
+                    className="w-full py-2 rounded-lg border border-red-900/40 
+                    text-red-400 hover:bg-red-900/30 
+                    flex items-center justify-center gap-2 transition"
+                  >
+                    <LogOut size={18} /> Leave Class
+                  </button>
+                ) : isWaitlisted ? (
+                  <button
+                    onClick={() => leaveTutorEvent(event.id)}
+                    className="w-full py-2 rounded-lg border border-yellow-900/40 
+                    text-yellow-400 hover:bg-yellow-900/30 
+                    flex items-center justify-center gap-2 transition"
+                  >
+                    <LogOut size={18} /> Leave Waitlist
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => joinTutorEvent(event.id)}
+                    disabled={!canJoin}
+                    className={`w-full py-2 rounded-lg flex items-center justify-center gap-2 
+                    font-medium transition
+                      ${
+                        !canJoin
+                          ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                          : isFull
+                          ? 'bg-yellow-600 hover:bg-yellow-700 text-black'
+                          : 'bg-blue-600 hover:bg-blue-700 shadow-md'
+                      }
+                    `}
+                  >
+                    {!canJoin ? (
+                      'Students Only'
+                    ) : isFull ? (
+                      'Join Waitlist'
+                    ) : (
+                      <>
+                        <LogIn size={18} /> Join Class
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
