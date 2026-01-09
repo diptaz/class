@@ -60,7 +60,11 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider = ({ children }: { children?: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Initialize currentUser from localStorage if available
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('classSync_currentUser');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   
   // Data States
   const [users, setUsers] = useState<User[]>([]);
