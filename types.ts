@@ -83,6 +83,7 @@ export interface TutorEvent {
   tutorName: string;
   maxParticipants: number;
   participants: string[]; // List of User IDs who joined
+  waitingList: string[]; // List of User IDs in waiting list
 }
 
 // Log activity
