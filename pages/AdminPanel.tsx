@@ -84,7 +84,8 @@ create table if not exists tutor_events (
   "tutorId" text,
   "tutorName" text,
   "maxParticipants" int2,
-  "participants" jsonb default '[]'
+  "participants" jsonb default '[]',
+  "waitingList" jsonb default '[]'
 );
 
 -- 9. ACTIVITY LOGS
