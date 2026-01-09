@@ -60,10 +60,15 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider = ({ children }: { children?: ReactNode }) => {
-  // Initialize currentUser from localStorage if available
+  // Initialize currentUser from localStorage synchronously to avoid initial null state
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('classSync_currentUser');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('classSync_currentUser');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      console.error("Error parsing session:", error);
+      return null;
+    }
   });
   
   // Data States
@@ -79,6 +84,15 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Sync currentUser changes to localStorage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('classSync_currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('classSync_currentUser');
+    }
+  }, [currentUser]);
 
   // --- Initial Data Fetching ---
   useEffect(() => {
@@ -98,6 +112,21 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         const { data: dbUsers, error: userError } = await supabase.from('users').select('*');
         if (dbUsers && dbUsers.length > 0) {
           setUsers(dbUsers);
+          
+          // Re-validate and sync session with latest DB data
+          // We use the 'currentUser' from the closure (initial state) to check
+          if (currentUser) {
+            const freshUser = dbUsers.find((u: User) => u.id === currentUser.id);
+            if (freshUser) {
+               // Update session with fresh data (e.g. if role or name changed remotely)
+               if (freshUser.isActive) {
+                  setCurrentUser(freshUser); 
+               } else {
+                  // If user was suspended, log them out
+                  setCurrentUser(null);
+               }
+            }
+          }
         } else {
           // Seed initial users if DB is empty
           const seedUsers = generateUsers();
@@ -146,7 +175,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     };
 
     fetchData();
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount
 
   const loadLocalData = () => {
     // Fallback logic from previous version
@@ -164,10 +193,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     setMaterials(initialMaterials);
     setTutorEvents(initialTutorEvents);
   };
-
-  // --- Persistence Helper ---
-  // We no longer use useEffect to persist to localStorage. 
-  // Instead, we call Supabase in the action methods.
 
   // Dark Mode
   useEffect(() => {
@@ -198,6 +223,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     const user = users.find(usr => usr.username === u && usr.password === p);
     if (user && user.isActive) {
       setCurrentUser(user);
+      // localStorage is handled by useEffect now
       logActivity(`Logged in`);
       return true;
     }
@@ -230,8 +256,11 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   };
 
   const logout = () => {
-    logActivity(`Logged out`);
+    if (currentUser) {
+      logActivity(`Logged out`);
+    }
     setCurrentUser(null);
+    // localStorage removal handled by useEffect
   };
 
   // --- Actions with Supabase Integration ---
@@ -473,7 +502,9 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     }));
 
     if (currentUser && currentUser.id === userId) {
-      setCurrentUser(prev => prev ? { ...prev, ...updates } : null);
+      const updatedUser = { ...currentUser, ...updates };
+      setCurrentUser(updatedUser);
+      // localStorage update handled by useEffect
     }
 
     if (isSupabaseConfigured()) await supabase.from('users').update(updates).eq('id', userId);
@@ -487,11 +518,8 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       return u;
     }));
     
-    // In DB we need to handle the swap carefully, but for now just update the target user
-    // Ideally we update the old seat holder to null too if needed
     if (isSupabaseConfigured()) {
        if (seatIndex !== null) {
-           // Clear anyone else on this seat
            await supabase.from('users').update({ seatIndex: null }).eq('seatIndex', seatIndex);
        }
        await supabase.from('users').update({ seatIndex }).eq('id', userId);
@@ -501,7 +529,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
 
   const resetSeats = async () => {
      setUsers(prev => prev.map(u => ({ ...u, seatIndex: null })));
-     if (isSupabaseConfigured()) await supabase.from('users').update({ seatIndex: null }).neq('id', '0'); // update all
+     if (isSupabaseConfigured()) await supabase.from('users').update({ seatIndex: null }).neq('id', '0');
      logActivity('Reset all seats');
   };
 
@@ -515,7 +543,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       return { id: u.id, seatIndex: idx < 35 ? idx : null };
     });
 
-    // Optimistic update
     setUsers(prev => prev.map(u => {
       if (u.role === Role.STUDENT) {
         const up = updates.find(x => x.id === u.id);
@@ -525,7 +552,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     }));
 
     if (isSupabaseConfigured()) {
-        // Batch update is hard in REST without RPC, loop for now (not efficient but works for 35 users)
         for (const up of updates) {
             await supabase.from('users').update({ seatIndex: up.seatIndex }).eq('id', up.id);
         }
